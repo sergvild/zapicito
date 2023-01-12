@@ -1,25 +1,30 @@
-version: "3"
+version: "3.2"
 services:
   server:
-    image: demo
+    image: zapicito
     ports:
       - "8080:8080"
+    expose:
+      - "3306"
     environment:
       - spring.datasource.url=jdbc:mysql://mysqldb:3306/zapicito?useSSL=false
     networks:
-      - demomysql-net
+      - zapicitomysql-net
+    volumes:
+      - my-db:/var/lib/mysql
     depends_on:
       - mysqldb
 
   mysqldb:
     image: arm64v8/mysql:oracle
     networks:
-      - demomysql-net
+      - zapicitomysql-net
     environment:
       - MYSQL_ROOT_PASSWORD=1234
       - MYSQL_DATABASE=zapicito
       - MYSQL_USER=zapicito
       - MYSQL_PASSWORD=1234
-
 networks:
-  demomysql-net:
+  zapicitomysql-net:
+volumes:
+  my-db:
