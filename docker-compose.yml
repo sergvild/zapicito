@@ -1,30 +1,41 @@
 version: "3.2"
 services:
-  server:
-    image: zapicito
+  zapicito-db:
+    #image: arm64v8/mysql:oracle
+    container_name: zapicito-db
+    image: mysql:8.0
     ports:
-      - "8080:8080"
-    expose:
-      - "3306"
-    environment:
-      - spring.datasource.url=jdbc:mysql://mysqldb:3306/zapicito?useSSL=false
+      - "3307:3306"
     networks:
-      - zapicitomysql-net
-    volumes:
-      - my-db:/var/lib/mysql
-    depends_on:
-      - mysqldb
-
-  mysqldb:
-    image: arm64v8/mysql:oracle
-    networks:
-      - zapicitomysql-net
+      - zapicito-mysql-net
     environment:
       - MYSQL_ROOT_PASSWORD=1234
       - MYSQL_DATABASE=zapicito
       - MYSQL_USER=zapicito
-      - MYSQL_PASSWORD=1234
+      - MYSQL_PASSWORD=12345678
+
+  zapicito-app:
+    container_name: zapicito-server
+    restart: always
+    image: zapicito
+    ports:
+      - "8090:8080"
+    expose:
+      - "3306"
+      - "3307"
+    environment:
+      - MYSQL_HOST=zapicito-db
+      - MYSQL_PORT=3306
+      - MYSQL_USERNAME=zapicito
+      - MYSQL_PASSWORD=12345678
+      - MYSQL_DATABASE=zapicito
+    networks:
+      - zapicito-mysql-net
+    volumes:
+      - my-db:/var/lib/mysql
+    depends_on:
+      - zapicito-db
 networks:
-  zapicitomysql-net:
+  zapicito-mysql-net:
 volumes:
   my-db:

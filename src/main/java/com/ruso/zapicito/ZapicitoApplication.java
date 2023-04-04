@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 public class ZapicitoApplication {
 
 	public static void main(String[] args) {
+		System.out.println("dsdjfsdlkfjdskfjdslkjdslkjdslkj");
 		SpringApplication.run(ZapicitoApplication.class, args);
 	}
 
