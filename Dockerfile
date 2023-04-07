@@ -1,5 +1,3 @@
-export DOCKER_BUILDKIT=1
-
 #Maven Build
 FROM maven:3.8.3-openjdk-17 AS builder
 COPY pom.xml /app/
