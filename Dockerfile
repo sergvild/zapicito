@@ -2,7 +2,7 @@
 FROM maven:3.8.3-openjdk-17 AS builder
 COPY pom.xml /app/
 COPY src /app/src
-RUN --mount=type=cache,target=/root/.m2 mvn -f /app/pom.xml clean package -DskipTests
+RUN target=/root/.m2 mvn -f /app/pom.xml clean package -DskipTests
 
 FROM openjdk:17-oracle
 VOLUME /tmp
