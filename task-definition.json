@@ -1,76 +1,82 @@
 {
-  "taskDefinitionArn": "arn:aws:ecs:us-east-1:756194274603:task-definition/DeploymentContainer:1",
-  "containerDefinitions": [
-    {
-      "name": "zapicito",
-      "image": "public.ecr.aws/c8b4s4n3/zapicito",
-      "cpu": 0,
-      "portMappings": [
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:756194274603:task-definition/DeployContainer:2",
+    "containerDefinitions": [
         {
-          "name": "zapicito-80-tcp",
-          "containerPort": 80,
-          "hostPort": 80,
-          "protocol": "tcp",
-          "appProtocol": "http"
+            "name": "zapicito",
+            "image": "756194274603.dkr.ecr.us-east-1.amazonaws.com/zapicito",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "zapicito-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/DeploymentContainer",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
         }
-      ],
-      "essential": true,
-      "environment": [],
-      "environmentFiles": [],
-      "mountPoints": [],
-      "volumesFrom": [],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-create-group": "true",
-          "awslogs-group": "/ecs/DeploymentContainer",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "ecs"
+    ],
+    "family": "DeployContainer",
+    "executionRoleArn": "arn:aws:iam::756194274603:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 2,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
         }
-      }
-    }
-  ],
-  "family": "DeploymentContainer",
-  "executionRoleArn": "arn:aws:iam::756194274603:role/ecsTaskExecutionRole",
-  "networkMode": "awsvpc",
-  "revision": 1,
-  "volumes": [],
-  "status": "ACTIVE",
-  "requiresAttributes": [
-    {
-      "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
     },
-    {
-      "name": "ecs.capability.execution-role-awslogs"
-    },
-    {
-      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
-    },
-    {
-      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
-    },
-    {
-      "name": "ecs.capability.task-eni"
-    },
-    {
-      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
-    }
-  ],
-  "placementConstraints": [],
-  "compatibilities": [
-    "EC2",
-    "FARGATE"
-  ],
-  "requiresCompatibilities": [
-    "FARGATE"
-  ],
-  "cpu": "1024",
-  "memory": "3072",
-  "runtimePlatform": {
-    "cpuArchitecture": "X86_64",
-    "operatingSystemFamily": "LINUX"
-  },
-  "registeredAt": "2023-04-06T04:07:06.837Z",
-  "registeredBy": "arn:aws:iam::756194274603:root",
-  "tags": []
+    "registeredAt": "2023-04-10T21:48:05.400Z",
+    "registeredBy": "arn:aws:iam::756194274603:root",
+    "tags": []
 }
