@@ -15,6 +15,10 @@ services:
       - MYSQL_PASSWORD=12345678
 
   zapicito-app:
+    build:
+      context: .
+      args:
+        DOCKER_BUILDKIT: 1
     container_name: zapicito-server
     restart: always
     image: zapicito
