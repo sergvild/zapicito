@@ -57,7 +57,7 @@ public class BranchController {
     }
 
     @PostMapping("/{id}/services/connect")
-    public ResponseEntity<?> connectServiceToBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id, @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
+    public ResponseEntity<String> connectServiceToBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id, @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
         servicesService.connectServiceToBranch(id, branchServiceDto);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }

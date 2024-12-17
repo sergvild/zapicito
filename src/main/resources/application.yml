@@ -19,7 +19,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL5InnoDBDialect
-        ddl-auto: create
+        ddl-auto: update
         show_sql: true
     defer-datasource-initialization: true
     generate-ddl: true

@@ -4,7 +4,6 @@ import com.ruso.zapicito.dto.BranchDto;
 import com.ruso.zapicito.dto.BranchEmployeeDto;
 import com.ruso.zapicito.dto.BranchServiceDto;
 import com.ruso.zapicito.entity.Branch;
-import com.ruso.zapicito.entity.BranchServices;
 import com.ruso.zapicito.entity.Company;
 import com.ruso.zapicito.entity.Employee;
 import com.ruso.zapicito.exception.ZapicitoException;
@@ -13,8 +12,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class BranchService {

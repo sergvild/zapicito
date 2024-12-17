@@ -1,7 +1,6 @@
 package com.ruso.zapicito.controller;
 
 import com.ruso.zapicito.dto.BranchServiceDto;
-import com.ruso.zapicito.dto.EmployeeBranchServiceDto;
 import com.ruso.zapicito.dto.UserDto;
 import com.ruso.zapicito.entity.Employee;
 import com.ruso.zapicito.exception.ZapicitoException;
@@ -45,9 +44,9 @@ public class EmployeeController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Employee>> findAllCompanies(){
-        List<Employee> companies = employeeService.findAllEmployees();
-        return new ResponseEntity<>(companies, HttpStatus.ACCEPTED);
+    public ResponseEntity<List<Employee>> findAllEmployees(){
+        List<Employee> employees = employeeService.findAllEmployees();
+        return new ResponseEntity<>(employees, HttpStatus.ACCEPTED);
     }
 
     @PutMapping("/{id}")
@@ -66,5 +65,12 @@ public class EmployeeController {
     public ResponseEntity<?> connectAllServicesToEmployee(@PathVariable @ApiParam(name = "id", value = "Employee id", example = "1") Long id, @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
         servicesService.connectAllServicesToEmployee(id, branchServiceDto);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
+    }
+
+    @GetMapping("/{companyId}")
+    public ResponseEntity<List<Employee>> findAllAvailableEmployees(@PathVariable Integer companyId,
+                                                                    @RequestParam @ApiParam(name = "datetime", value = "Date time", example = "") String dateTime){
+        List<Employee> employees = employeeService.findAllEmployees();
+        return new ResponseEntity<>(employees, HttpStatus.ACCEPTED);
     }
 }

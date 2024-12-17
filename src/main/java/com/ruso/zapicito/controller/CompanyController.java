@@ -2,17 +2,14 @@ package com.ruso.zapicito.controller;
 
 import com.ruso.zapicito.dto.CompanyDto;
 import com.ruso.zapicito.entity.Company;
-import com.ruso.zapicito.entity.Employee;
 import com.ruso.zapicito.exception.ZapicitoException;
 import com.ruso.zapicito.service.CompanyService;
-import com.ruso.zapicito.service.EmployeeService;
 import io.swagger.annotations.ApiParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/companies")
