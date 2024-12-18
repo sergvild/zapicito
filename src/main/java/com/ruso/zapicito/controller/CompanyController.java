@@ -33,11 +33,6 @@ public class CompanyController {
         return new ResponseEntity<>(company, HttpStatus.ACCEPTED);
     }
 
-    @GetMapping
-    @RequestMapping("/test")
-    public ResponseEntity<String> test() throws ZapicitoException {
-        return new ResponseEntity<>("test", HttpStatus.ACCEPTED);
-    }
     @GetMapping("/all")
     public ResponseEntity<List<Company>> findAllCompanies(){
         List<Company> companies = companyService.findAllCompanies();
