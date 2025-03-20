@@ -6,10 +6,7 @@ import com.ruso.zapicito.entity.base.BaseEntity;
 import com.ruso.zapicito.dto.RoleType;
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.ManyToMany;
+import javax.persistence.*;
 import java.util.Set;
 
 
@@ -19,6 +16,7 @@ import java.util.Set;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "role")
 public class Role extends BaseEntity {
 
     public Role(RoleType name) {

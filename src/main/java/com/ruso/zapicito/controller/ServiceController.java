@@ -1,12 +1,13 @@
 package com.ruso.zapicito.controller;
 
-import com.ruso.zapicito.dto.ServiceCategoryDto;
+import com.ruso.zapicito.dto.ApiResponse;
 import com.ruso.zapicito.dto.ServiceDto;
 import com.ruso.zapicito.entity.Service;
-import com.ruso.zapicito.entity.ServiceCategory;
 import com.ruso.zapicito.exception.ZapicitoException;
 import com.ruso.zapicito.service.ServicesService;
+import com.ruso.zapicito.util.ResponseUtil;
 import io.swagger.annotations.ApiParam;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,49 +20,44 @@ public class ServiceController {
 
     private final ServicesService servicesService;
 
-    public ServiceController(ServicesService servicesService) {
+    public ServiceController(@Lazy ServicesService servicesService) {
         this.servicesService = servicesService;
     }
 
-    @PostMapping
-    public ResponseEntity<Service> createService(@RequestBody ServiceDto serviceDto) throws ZapicitoException {
-        Service service = new Service(serviceDto);
-        return new ResponseEntity<>(servicesService.createService(service, serviceDto.getCategory()), HttpStatus.ACCEPTED);
+    @PostMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<Service>> createService(@PathVariable Long companyId,
+                                                              @RequestBody ServiceDto serviceDto) throws ZapicitoException {
+        Service service = servicesService.mapToService(serviceDto);
+        Service createdService = servicesService.createService(service, serviceDto.getCategories(), companyId);
+
+        return new ResponseEntity<>(ResponseUtil.success(createdService), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping
-    public ResponseEntity<Service> findService(@RequestParam @ApiParam(name = "id", value = "Service id", example = "1") Long id) throws ZapicitoException {
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<Service>> findService(@PathVariable Long id) throws ZapicitoException {
         Service service = servicesService.findServiceById(id);
-        return new ResponseEntity<>(service, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(ResponseUtil.success(service), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<Service>> findAllServices(){
-        List<Service> services = servicesService.findAllServices();
-        return new ResponseEntity<>(services, HttpStatus.ACCEPTED);
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<List<Service>>> findAllServices(@PathVariable Long companyId) {
+        List<Service> services = servicesService.findAllServicesByCompanyId(companyId);
+        return new ResponseEntity<>(ResponseUtil.success(services), HttpStatus.ACCEPTED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Service> updateService(@RequestBody ServiceDto updatedService, @PathVariable @ApiParam(name = "id", value = "Service id", example = "1") Long id) throws ZapicitoException {
-        Service service = servicesService.updateService(updatedService, id);
-        return new ResponseEntity<>(service, HttpStatus.ACCEPTED);
+    public ResponseEntity<ApiResponse<Service>> updateService(@RequestBody ServiceDto serviceDto,
+                                                              @PathVariable @ApiParam(name = "id", value = "Service id", example = "1") Long id) throws ZapicitoException {
+        Service updatedService = servicesService.mapToService(serviceDto);
+
+        Service service = servicesService.updateService(updatedService, id, serviceDto.getCategories());
+        return new ResponseEntity<>(ResponseUtil.success(service), HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteService(@PathVariable @ApiParam(name = "id", value = "Service id", example = "1") Long id){
+    public ResponseEntity<ApiResponse<String>> deleteService(@PathVariable @ApiParam(name = "id", value = "Service id", example = "1") Long id) {
         servicesService.deleteService(id);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
-    }
-
-    @PostMapping("/categories")
-    public ResponseEntity<ServiceCategory> createCategory(@RequestBody ServiceCategoryDto serviceCategoryDto) throws ZapicitoException {
-        ServiceCategory serviceCategory = new ServiceCategory(serviceCategoryDto);
-        return new ResponseEntity<>(servicesService.createServiceCategory(serviceCategory), HttpStatus.ACCEPTED);
-    }
-    @GetMapping("/categories/all")
-    public ResponseEntity<List<ServiceCategory>> findAllCategories(){
-        List<ServiceCategory> categories = servicesService.findAllCategories();
-        return new ResponseEntity<>(categories, HttpStatus.ACCEPTED);
     }
 
 }

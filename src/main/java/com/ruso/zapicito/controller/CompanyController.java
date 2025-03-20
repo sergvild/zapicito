@@ -1,15 +1,15 @@
 package com.ruso.zapicito.controller;
 
+import com.ruso.zapicito.dto.ApiResponse;
 import com.ruso.zapicito.dto.CompanyDto;
 import com.ruso.zapicito.entity.Company;
+
 import com.ruso.zapicito.exception.ZapicitoException;
 import com.ruso.zapicito.service.CompanyService;
-import io.swagger.annotations.ApiParam;
+import com.ruso.zapicito.util.ResponseUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/companies")
@@ -22,31 +22,31 @@ public class CompanyController {
     }
 
     @PostMapping
-    public ResponseEntity<Company> createCompany(@RequestBody CompanyDto companyDto){
-        Company company = new Company(companyDto);
-        return new ResponseEntity<>(companyService.createCompany(company), HttpStatus.ACCEPTED);
+    public ResponseEntity<ApiResponse<Company>> createCompany(@RequestBody CompanyDto companyDto,
+                                                              @RequestParam Long userId) throws ZapicitoException {
+        Company company = companyService.mapToCompany(companyDto);
+
+        Company savedCompany = companyService.createCompany(company, userId);
+        return new ResponseEntity<>(ResponseUtil.success(savedCompany), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping
-    public ResponseEntity<Company> findCompany(@RequestParam @ApiParam(name = "id", value = "Company id", example = "1")Long id) throws ZapicitoException {
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<Company>> findCompany(@PathVariable Long id) throws ZapicitoException {
         Company company = companyService.findCompanyById(id);
-        return new ResponseEntity<>(company, HttpStatus.ACCEPTED);
-    }
-
-    @GetMapping("/all")
-    public ResponseEntity<List<Company>> findAllCompanies(){
-        List<Company> companies = companyService.findAllCompanies();
-        return new ResponseEntity<>(companies, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(ResponseUtil.success(company), HttpStatus.ACCEPTED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Company> updateCompany(@RequestBody CompanyDto updatedCompany, @PathVariable @ApiParam(name = "id", value = "Company id", example = "1") Long id) throws ZapicitoException {
+    public ResponseEntity<ApiResponse<Company>> updateCompany(@RequestBody CompanyDto companyDto,
+                                                              @PathVariable Long id) throws ZapicitoException {
+        Company updatedCompany = companyService.mapToCompany(companyDto);
+
         Company company = companyService.updateCompany(updatedCompany, id);
-        return new ResponseEntity<>(company, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(ResponseUtil.success(company), HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteCompany(@PathVariable @ApiParam(name = "id", value = "Company id", example = "1") Long id){
+    public ResponseEntity<ApiResponse<String>> deleteCompany(@PathVariable Long id) {
         companyService.deleteCompany(id);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }

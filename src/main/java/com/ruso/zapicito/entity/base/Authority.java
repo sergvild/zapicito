@@ -13,6 +13,7 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "authority")
 public class Authority extends BaseEntity implements GrantedAuthority {
     public static final String DEFAULT_ROLE_AUTHORITY = "READ";
 

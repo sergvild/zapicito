@@ -14,19 +14,19 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "branch_services")
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
+@Table(name = "branch_service")
 public class BranchServices extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "branch_id")
     @JsonManagedReference
-    Branch branch;
+    private Branch branch;
 
     @ManyToOne
     @JoinColumn(name = "service_id")
     @JsonManagedReference
-    Service service;
+    private Service service;
 
     @ManyToMany(fetch = FetchType.LAZY,
             cascade = {
@@ -38,9 +38,4 @@ public class BranchServices extends BaseEntity {
             inverseJoinColumns = { @JoinColumn(name = "employee_id") })
     private Set<Employee> employees = new HashSet<>();
 
-    public BranchServices(Branch branch, Service service) {
-        super();
-        this.branch = branch;
-        this.service = service;
-    }
 }

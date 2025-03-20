@@ -5,16 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ServiceCategoryDto {
+public class CategoryDto {
 
-    @NotNull
-    @NotEmpty
     private String name;
+    private String color;
+    private List<String> images;
 }

@@ -24,11 +24,11 @@ public abstract class BaseEntity implements Serializable {
     @JsonIgnore
     private Timestamp createdDate;
 
-    @Column(name = "updated_date", insertable = false, updatable = false, columnDefinition = "TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)")
+    @Column(name = "updated_date", insertable = false, updatable = true, columnDefinition = "TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)")
     @JsonIgnore
     private Timestamp updatedDate;
 
-    @Column(name = "enabled", insertable = false, updatable = false, columnDefinition = "BIT(1) NOT NULL DEFAULT 1")
+    @Column(name = "enabled", insertable = false, updatable = true, columnDefinition = "BIT(1) NOT NULL DEFAULT 1")
     @JsonIgnore
     private boolean enabled;
 

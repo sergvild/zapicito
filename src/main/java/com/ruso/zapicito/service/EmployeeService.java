@@ -1,89 +1,135 @@
 package com.ruso.zapicito.service;
 
-import com.ruso.zapicito.dto.BranchEmployeeDto;
-import com.ruso.zapicito.dto.BranchServiceDto;
-import com.ruso.zapicito.dto.RoleType;
+import com.ruso.zapicito.dto.EmployeeDto;
 import com.ruso.zapicito.dto.UserDto;
-import com.ruso.zapicito.entity.Branch;
-import com.ruso.zapicito.entity.BranchServices;
-import com.ruso.zapicito.entity.Employee;
-import com.ruso.zapicito.entity.Role;
+import com.ruso.zapicito.entity.*;
 import com.ruso.zapicito.exception.ZapicitoException;
+import com.ruso.zapicito.mapper.EmployeeMapper;
 import com.ruso.zapicito.repository.EmployeeRepository;
 import com.ruso.zapicito.repository.RoleRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
+@RequiredArgsConstructor
 @Service
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final RoleRepository roleRepository;
+    private final EmployeeMapper employeeMapper;
+    @Lazy
+    private final BranchService branchService;
+    private final ScheduleService scheduleService;
 
-    public EmployeeService(EmployeeRepository employeeRepository, RoleRepository roleRepository) {
-        this.employeeRepository = employeeRepository;
-        this.roleRepository = roleRepository;
-    }
+    public Employee saveOwnerEmployee(UserDto userDto) throws ZapicitoException {
+        Employee employee = mapToEmployee(userDto);
+        employee.setUuid(UUID.randomUUID().toString());
+        setEmployeeRole(employee, 5L);
 
-    public Employee saveEmployee(Employee employee) throws ZapicitoException {
-        setEmployeeRole(employee, RoleType.EMPLOYEE);
         return employeeRepository.save(employee);
     }
 
-    public Employee createAdminEmployee(Employee employee) throws ZapicitoException {
-        setEmployeeRole(employee, RoleType.ADMIN);
-        return employeeRepository.save(employee);
+    public Employee saveEmployee(Employee employee, Long location, Long roleId) throws ZapicitoException {
+        employee.setUuid(UUID.randomUUID().toString());
+        setEmployeeRole(employee, roleId);
+        setEmployeeBranches(employee, location);
+
+        Employee createdEmployee = employeeRepository.save(employee);
+        setEmployeeCalendar(employee, location);
+
+        return createdEmployee;
     }
 
-    private void setEmployeeRole(Employee employee, RoleType roleType) throws ZapicitoException {
-        if (emailExists(employee.getEmail())) {
-            throw new ZapicitoException("There is an account with that email address: "
-                    + employee.getEmail());
-        }
+    private void setEmployeeBranches(Employee employee, Long location) throws ZapicitoException {
+        Branch branch = branchService.findBranchById(location);
+        employee.getBranches().add(branch);
+    }
 
-        Role role = roleRepository.findByName(roleType)
-                .orElseThrow(()-> new ZapicitoException("There is no an role with that name: "
-                        + RoleType.ADMIN.toString()) );
+    private void setEmployeeRole(Employee employee, Long roleId) throws ZapicitoException {
+        Role role = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ZapicitoException("There is no an role with that id: "
+                        + roleId));
 
         employee.setRole(role);
     }
-    public Employee findEmployeeById(Long id) throws ZapicitoException {
-        return employeeRepository.findById(id).orElseThrow(()->new ZapicitoException("Couldn't find employee by ID="+id));
+
+    private void setEmployeeCalendar(Employee employee, Long locationId) {
+        Optional<Schedule> schedule = scheduleService.findScheduleByEmployeeIdAndBranchId(employee.getId(), locationId);
+        if (schedule.isPresent()) {
+            return;
+        }
+
+        Schedule newSchedule = new Schedule();
+        newSchedule.setEmployeeId(employee.getId());
+        newSchedule.setBranchId(locationId);
+
+        scheduleService.createSchedule(newSchedule);
     }
 
-    public List<Employee> findAllEmployees(){
+    public Employee findEmployeeById(Long id) throws ZapicitoException {
+        return employeeRepository.findById(id)
+                .orElseThrow(() -> new ZapicitoException("Couldn't find employee by ID=" + id));
+    }
+
+    public List<Employee> findAllEmployees() {
         return employeeRepository.findAll();
     }
 
-    public Employee updateEmployee(UserDto updatedEmployee, Long id) throws ZapicitoException {
-
-        return employeeRepository.findById(id)
-                .map(employee -> {
-                    employee.setFirstName(updatedEmployee.getFirstName());
-                    employee.setLastName(updatedEmployee.getLastName());
-                    employee.setEmail(updatedEmployee.getEmail());
-                    employee.setPhone(updatedEmployee.getPhone());
-                    employee.setPassword(updatedEmployee.getPassword());
-                    return employeeRepository.saveAndFlush(employee);
-                })
-                .orElseThrow(()->new ZapicitoException("Couldn't find employee by ID="+id));
-
+    public List<Employee> findEmployeesByBranchId(Long branchId) {
+        return employeeRepository.findEmployeesByBranchId(branchId);
     }
 
-    public Employee updateEmployee(Employee employee) throws ZapicitoException {
+    public Employee updateEmployee(Long employeeId, EmployeeDto employeeDto) throws ZapicitoException {
+        Employee savedEmployee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ZapicitoException("Couldn't find employee by ID=" + employeeId));
+
+        employeeMapper.updateFromDto(employeeDto, savedEmployee);
+
+        setEmployeeRole(savedEmployee, employeeDto.getRole());
+        setEmployeeBranches(savedEmployee, employeeDto.getLocation());
+
+        return employeeRepository.save(savedEmployee);
+    }
+
+    public Employee saveEmployee(Employee employee) {
         return employeeRepository.save(employee);
     }
 
-    public void deleteEmployee(Long id){
-        employeeRepository.deleteById(id);
+    public void detachEmployee(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Couldn't find employee by ID=" + employeeId));
+
+        employee.setEnabled(false);
+        employeeRepository.save(employee);
+    }
+
+    public void attachEmployee(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Couldn't find employee by ID=" + employeeId));
+
+        employee.setEnabled(true);
+        employeeRepository.save(employee);
     }
 
     private boolean emailExists(String email) {
         return employeeRepository.findByEmail(email).isPresent();
     }
 
+    public Employee mapToEmployee(EmployeeDto employeeDto) {
+        Employee employee = employeeMapper.fromDto(employeeDto);
+        employee.setName(employeeDto.getFirstName() + " " + employeeDto.getLastName());
+
+        return employee;
+    }
+
+    public Employee mapToEmployee(UserDto userDto) {
+        Employee employee = employeeMapper.fromDto(userDto);
+        employee.setName(userDto.getFirstName() + " " + userDto.getLastName());
+
+        return employee;
+    }
 }

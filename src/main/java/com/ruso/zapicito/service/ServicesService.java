@@ -1,145 +1,122 @@
 package com.ruso.zapicito.service;
 
-import com.ruso.zapicito.dto.BranchEmployeeDto;
-import com.ruso.zapicito.dto.BranchServiceDto;
-import com.ruso.zapicito.dto.EmployeeBranchServiceDto;
 import com.ruso.zapicito.dto.ServiceDto;
 import com.ruso.zapicito.entity.*;
 import com.ruso.zapicito.exception.ZapicitoException;
-import com.ruso.zapicito.repository.BranchServiceRepository;
-import com.ruso.zapicito.repository.ServiceCategoryRepository;
+import com.ruso.zapicito.mapper.ServiceMapper;
 import com.ruso.zapicito.repository.ServiceRepository;
+import lombok.RequiredArgsConstructor;
 
-import java.util.HashSet;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @org.springframework.stereotype.Service
 public class ServicesService {
 
     private final BranchService branchService;
     private final EmployeeService employeeService;
+    private final CompanyService companyService;
     private final ServiceRepository serviceRepository;
-    private final ServiceCategoryRepository serviceCategoryRepository;
-    private final BranchServiceRepository branchServiceRepository;
+    private final ServiceMapper serviceMapper;
+    private final CategoryService categoryService;
 
-    public ServicesService(BranchService branchService, EmployeeService employeeService, ServiceRepository serviceRepository, ServiceCategoryRepository serviceCategoryRepository, BranchServiceRepository branchServiceRepository) {
-        this.branchService = branchService;
-        this.employeeService = employeeService;
-        this.serviceRepository = serviceRepository;
-        this.serviceCategoryRepository = serviceCategoryRepository;
-        this.branchServiceRepository = branchServiceRepository;
-    }
+    public Service createService(Service service,
+                                 List<Long> categoryIds,
+                                 Long companyId) throws ZapicitoException {
 
-    public Service createService(Service service, String categoryName) throws ZapicitoException {
-        ServiceCategory serviceCategory = getOrCreateServiceCategory(categoryName);
-
-        service.setCategory(serviceCategory);
+        setServiceCompany(service, companyId);
+        setServiceCategories(service, categoryIds);
         return serviceRepository.save(service);
     }
 
-    public ServiceCategory createServiceCategory(ServiceCategory serviceCategory) throws ZapicitoException {
-        return serviceCategoryRepository.save(serviceCategory);
+    public Service saveService(Service service) {
+        return serviceRepository.save(service);
+    }
+
+    public Service updateService(Service updatedService,
+                                 Long serviceId,
+                                 List<Long> categoryIds) throws ZapicitoException {
+
+        Service savedService = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new ZapicitoException("Couldn't find service by ID=" + serviceId));
+
+        updatedService.setId(serviceId);
+        updatedService.setUpdatedDate(Timestamp.valueOf(LocalDateTime.now()));
+        updatedService.setCompany(savedService.getCompany());
+
+        setServiceCategories(updatedService, categoryIds);
+        return serviceRepository.save(updatedService);
+    }
+
+    private void setServiceCategories(Service service, List<Long> categoryIds) {
+        List<Category> categories = categoryService.findCategoriesByIds(categoryIds);
+        service.setCategories(categories);
+    }
+
+    private void setServiceCompany(Service service, Long companyId) throws ZapicitoException {
+        Company company = companyService.findCompanyById(companyId);
+        service.setCompany(company);
     }
 
     public Service findServiceById(Long id) throws ZapicitoException {
         return serviceRepository.findById(id).orElseThrow(()->new ZapicitoException("Couldn't find service by ID="+id));
     }
 
-    public List<Service> findAllServices(){
-        return serviceRepository.findAll();
-    }
-
-    public List<ServiceCategory> findAllCategories(){
-        return serviceCategoryRepository.findAll();
-    }
-
-    public Service updateService(ServiceDto updatedService, Long id) throws ZapicitoException {
-
-        return serviceRepository.findById(id)
-                .map(service -> {
-                    service.setName(updatedService.getName());
-                    service.setDescription(updatedService.getDescription());
-                    service.setDuration(updatedService.getDuration());
-                    service.setPrice(updatedService.getPrice());
-                    service.setCategory(getOrCreateServiceCategory(updatedService.getCategory()));
-                    return serviceRepository.save(service);
-                })
-                .orElseThrow(()->new ZapicitoException("Couldn't find service by ID="+id));
-
+    public List<Service> findAllServicesByCompanyId(Long companyId) {
+        return serviceRepository.findAllByCompanyId(companyId);
     }
 
     public void deleteService(Long id){
         serviceRepository.deleteById(id);
     }
 
-    private ServiceCategory getOrCreateServiceCategory(String categoryName){
-        Optional<ServiceCategory> category = serviceCategoryRepository
-                .findByName(categoryName)
-                .stream().findFirst();
+    public void connectServiceToBranch(Long branchId, List<Long> serviceIds) throws ZapicitoException {
 
-        return category.orElseGet(() -> serviceCategoryRepository.save(new ServiceCategory(categoryName)));
-    }
-
-    public void connectServiceToBranch(Long branchId, BranchServiceDto branchServiceDto) throws ZapicitoException {
         Branch branch = branchService.findBranchById(branchId);
-        Service service = findServiceById(branchServiceDto.getServiceId());
+        List<Service> services = serviceRepository.findAllById(serviceIds);
 
-        if(branchServiceDto.isActive()){
-            BranchServices branchServices = new BranchServices(branch, service);
-            branchServiceRepository.save(branchServices);
-        }else {
-            BranchServices branchServices = branchServiceRepository.findByBranchAndService(branch, service).orElseThrow(()->new ZapicitoException("Couldn't find"));
-            branchServiceRepository.delete(branchServices);
-        }
-
+        branch.setServices(services);
+        branchService.saveBranch(branch);
     }
 
-    public void connectAllServicesToBranch(Long branchId, BranchServiceDto branchServiceDto) throws ZapicitoException {
-        if (branchServiceDto.isActive()) {
-            List<Service> services = serviceRepository.findAll();
-            Branch branch = branchService.findBranchById(branchId);
-            Set<BranchServices> branchServices = services.stream()
-                    .map(service -> new BranchServices(branch, service)).collect(Collectors.toSet());
+    public void connectAllServicesToBranch(Long branchId) throws ZapicitoException {
+        Branch branch = branchService.findBranchById(branchId);
 
-            Set<BranchServices> branchServicesSet = branch.getBranchServices();
-            branchServicesSet.addAll(branchServices);
-            branchServiceRepository.saveAll(branchServicesSet);
-        }
-        else {
-            branchServiceRepository.deleteAll();
-        }
+        List<Service> services = findAllServicesByCompanyId(branch.getCompany().getId());
+        branch.setServices(services);
+        branchService.saveBranch(branch);
     }
 
-    public void connectServiceToEmployee(Long employeeId, BranchServiceDto branchServiceDto) throws ZapicitoException {
+    public void connectServiceToEmployee(Long employeeId, List<Long> serviceIds) throws ZapicitoException {
+
         Employee employee = employeeService.findEmployeeById(employeeId);
-        BranchServices branchServices = branchServiceRepository
-                .findByBranchIdAndServiceId(branchServiceDto.getBranchId(), branchServiceDto.getServiceId())
-                .orElseThrow(()->new ZapicitoException("Couldn't find service by ID="+branchServiceDto.getServiceId()));
-
-        if (branchServiceDto.isActive())
-            employee.getBranchServices().add(branchServices);
-        else
-            employee.getBranchServices().remove(branchServices);
-
-        employeeService.updateEmployee(employee);
+        List<Service> services = serviceRepository.findAllById(serviceIds);
+        employee.setServices(services);
+        employeeService.saveEmployee(employee);
     }
 
-    public void connectAllServicesToEmployee(Long employeeId, BranchServiceDto branchServiceDto) throws ZapicitoException {
+    public void connectAllServicesToEmployee(Long employeeId) throws ZapicitoException {
         Employee employee = employeeService.findEmployeeById(employeeId);
+        List<Service> services = findAllServicesByCompanyId(employee.getCompany().getId());
 
-        if (branchServiceDto.isActive()) {
-            Set<BranchServices> branchServicesList = branchServiceRepository
-                    .findAllByBranch(branchServiceDto.getBranchId());
-            employee.getBranchServices().addAll(branchServicesList);
-        }
-        else {
-            employee.getBranchServices().clear();
-        }
-
-        employeeService.updateEmployee(employee);
+        employee.setServices(services);
+        employeeService.saveEmployee(employee);
     }
 
+    public Service mapToService(ServiceDto serviceDto) {
+        return serviceMapper.fromDto(serviceDto);
+    }
+
+    public List<Service> getAllServicesByBranch(Long branchId) throws ZapicitoException {
+        Branch branch = branchService.findBranchById(branchId);
+
+        return branch.getServices();
+    }
+
+    public List<Service> getAllServicesByEmployee(Long employeeId) throws ZapicitoException {
+        Employee employee = employeeService.findEmployeeById(employeeId);
+        return employee.getServices();
+    }
 }

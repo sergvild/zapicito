@@ -1,6 +1,6 @@
 package com.ruso.zapicito.validator;
 
-import com.ruso.zapicito.dto.UserDto;
+import com.ruso.zapicito.dto.EmployeeDto;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -13,7 +13,7 @@ public class PasswordMatchesValidator
     }
     @Override
     public boolean isValid(Object obj, ConstraintValidatorContext context){
-        UserDto user = (UserDto) obj;
+        EmployeeDto user = (EmployeeDto) obj;
         return user.getPassword().equals(user.getMatchingPassword());
     }
 }

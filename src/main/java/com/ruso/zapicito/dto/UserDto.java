@@ -1,44 +1,36 @@
 package com.ruso.zapicito.dto;
 
-import com.ruso.zapicito.validator.PasswordMatches;
-import com.ruso.zapicito.validator.ValidEmail;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.lang.Nullable;
+import lombok.*;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@PasswordMatches
+@Data
 public class UserDto {
-    @NotNull
-    @NotEmpty
-    private String firstName;
 
-    @NotNull
-    @NotEmpty
-    private String lastName;
-
-    @NotNull
-    @NotEmpty
-    private String password;
-    private String matchingPassword;
-
-    @ValidEmail
-    @NotNull
-    @NotEmpty
+    @Email
     private String email;
 
-    @NotNull
-    @NotEmpty
+    @NotBlank
+    private String firstName;
+
+    @NotBlank
+    private String lastName;
+
+    @NotBlank
+    private String password;
+
+    @NotBlank
+    private String confirmPassword;
+
+    @NotBlank
+    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$")
     private String phone;
 
-    @Nullable
-    private String role;
+    private String locale;
 }

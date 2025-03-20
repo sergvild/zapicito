@@ -3,52 +3,49 @@ package com.ruso.zapicito.entity.base;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ruso.zapicito.entity.Role;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Set;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @MappedSuperclass
+@EqualsAndHashCode(callSuper = true)
 public abstract class User extends BaseEntity implements UserDetails {
-    @NotNull
-    @NotEmpty
+
+    private String uuid;
+
     private String firstName;
-
-    @NotNull
-    @NotEmpty
+    private String middleName;
     private String lastName;
-
-    @NotNull
-    @NotEmpty
-    private String password;
-
-    @NotNull
-    @NotEmpty
+    private String sex;
     private String phone;
-
-    @NotNull
-    @NotEmpty
+    private String birthday;
+    private String comment;
+    private String avatar;
+    private String name;
     private String email;
+
+    private boolean access;
 
     @JsonIgnore
     @JsonBackReference
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="role_id", nullable=false)
     private Role role;
+
+    @Column(name = "last_activity")
+    private LocalDateTime lastActivity;
+
+    private Integer status;
 
     @Column(name = "account_expired")
     private boolean accountExpired;
@@ -59,13 +56,9 @@ public abstract class User extends BaseEntity implements UserDetails {
     @Column(name = "credentials_expired")
     private boolean credentialsExpired;
 
-    public User(String firstName, String lastName, String password, String phone, String email) {
-      this.firstName = firstName;
-      this.lastName = lastName;
-      this.password = password;
-      this.phone = phone;
-      this.email = email;
-    }
+    @NotNull
+    @NotEmpty
+    private String password;
 
     @Transient
     @Override
@@ -94,7 +87,7 @@ public abstract class User extends BaseEntity implements UserDetails {
     }
 
     @Override
-    public boolean isEnabled() {
-        return super.isEnabled();
+    public String getPassword() {
+        return password;
     }
 }

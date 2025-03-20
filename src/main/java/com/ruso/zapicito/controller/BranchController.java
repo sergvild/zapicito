@@ -1,13 +1,16 @@
 package com.ruso.zapicito.controller;
 
+import com.ruso.zapicito.dto.ApiResponse;
 import com.ruso.zapicito.dto.BranchDto;
 import com.ruso.zapicito.dto.BranchEmployeeDto;
 import com.ruso.zapicito.dto.BranchServiceDto;
 import com.ruso.zapicito.entity.Branch;
+import com.ruso.zapicito.entity.Service;
 import com.ruso.zapicito.exception.ZapicitoException;
 import com.ruso.zapicito.service.BranchService;
-import com.ruso.zapicito.service.ServicesService;
-import io.swagger.annotations.ApiParam;
+import com.ruso.zapicito.util.ResponseUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,64 +22,76 @@ import java.util.List;
 public class BranchController {
 
     private final BranchService branchService;
-    private final ServicesService servicesService;
 
-    public BranchController(BranchService branchService, ServicesService servicesService) {
+    public BranchController(@Lazy BranchService branchService) {
         this.branchService = branchService;
-        this.servicesService = servicesService;
     }
 
-    @PostMapping
-    public ResponseEntity<Branch> createBranch(@RequestBody BranchDto branchDto) throws ZapicitoException {
-        Branch branch = new Branch(branchDto);
-        return new ResponseEntity<>(branchService.createBranch(branch, branchDto.getCompanyId()), HttpStatus.ACCEPTED);
+    @PostMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<Branch>> createBranch(@PathVariable Long companyId,
+                                                            @RequestBody BranchDto branchDto) throws ZapicitoException {
+        Branch branch = branchService.mapToBranch(branchDto);
+        Branch createdBranch = branchService.createBranch(branch, companyId);
+
+        return new ResponseEntity<>(ResponseUtil.success(createdBranch), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping
-    public ResponseEntity<Branch> findBranch(@RequestParam @ApiParam(name = "id", value = "Branch id", example = "1") Long id) throws ZapicitoException {
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<Branch>> findBranch(@PathVariable Long id) throws ZapicitoException {
         Branch branch = branchService.findBranchById(id);
-        return new ResponseEntity<>(branch, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(ResponseUtil.success(branch), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<Branch>> findAllBranches(){
-        List<Branch> branches = branchService.findAllBranches();
-        return new ResponseEntity<>(branches, HttpStatus.ACCEPTED);
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<List<Branch>>> findBranchesByCompanyId(@PathVariable Long companyId) {
+        List<Branch> branches = branchService.findBranchesByCompanyId(companyId);
+        return new ResponseEntity<>(ResponseUtil.success(branches), HttpStatus.ACCEPTED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Branch> updateBranch(@RequestBody BranchDto updatedBranch, @PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id) throws ZapicitoException {
-        Branch branch = branchService.updateBranch(updatedBranch, id);
-        return new ResponseEntity<>(branch, HttpStatus.ACCEPTED);
+    @PutMapping("/{branchId}")
+    public ResponseEntity<ApiResponse<Branch>> updateBranch(@RequestBody BranchDto branchDto,
+                                                            @PathVariable Long branchId) throws ZapicitoException {
+        Branch updatedBranch = branchService.mapToBranch(branchDto);
+
+        Branch branch = branchService.updateBranch(updatedBranch, branchId);
+        return new ResponseEntity<>(ResponseUtil.success(branch), HttpStatus.ACCEPTED);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id){
-        branchService.deleteBranch(id);
+    @DeleteMapping("/{branchId}")
+    public ResponseEntity<ApiResponse<String>> deleteBranch(@PathVariable Long branchId){
+        branchService.deleteBranch(branchId);
+        return new ResponseEntity<>(ResponseUtil.success("Branch was deleted"), HttpStatus.ACCEPTED);
+    }
+
+    @PostMapping("/{branchId}/services")
+    public ResponseEntity<ApiResponse<String>> connectServiceToBranch(@PathVariable Long branchId,
+                                                         @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
+        branchService.connectServiceToBranch(branchId, branchServiceDto.getServices());
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 
-    @PostMapping("/{id}/services/connect")
-    public ResponseEntity<String> connectServiceToBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id, @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
-        servicesService.connectServiceToBranch(id, branchServiceDto);
+    @PostMapping("/{branchId}/services/all")
+    public ResponseEntity<ApiResponse<String>> connectAllServicesToBranch(@PathVariable Long branchId) throws ZapicitoException {
+        branchService.connectAllServicesToBranch(branchId);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 
-    @PostMapping("/{id}/services/connect-all")
-    public ResponseEntity<?> connectAllServicesToBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id, @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
-        servicesService.connectAllServicesToBranch(id, branchServiceDto);
+    @GetMapping("/{branchId}/services")
+    public ResponseEntity<ApiResponse<List<Service>>> getAllServicesByBranch(@PathVariable Long branchId) throws ZapicitoException {
+        return new ResponseEntity<>(ResponseUtil.success(branchService.getAllServicesByBranch(branchId)), HttpStatus.ACCEPTED);
+    }
+
+    @PostMapping("/{branchId}/employees/connect")
+    public ResponseEntity<ApiResponse<String>> connectEmployeeToBranch(@PathVariable Long branchId,
+                                                          @RequestBody BranchEmployeeDto branchEmployeeDto) throws ZapicitoException {
+        branchService.connectEmployeeToBranch(branchId, branchEmployeeDto);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 
-    @PostMapping("/{id}/employees/connect")
-    public ResponseEntity<?> connectEmployeeToBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id, @RequestBody BranchEmployeeDto branchEmployeeDto) throws ZapicitoException {
-        branchService.connectEmployeeToBranch(id, branchEmployeeDto);
-        return new ResponseEntity<>(HttpStatus.ACCEPTED);
-    }
-
-    @PostMapping("/{id}/employees/connect-all")
-    public ResponseEntity<?> connectAllEmployeesToBranch(@PathVariable @ApiParam(name = "id", value = "Branch id", example = "1") Long id, @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
-        branchService.connectAllEmployeesToBranch(id, branchServiceDto);
+    @PostMapping("/{branchId}/employees/connect-all")
+    public ResponseEntity<ApiResponse<String>> connectAllEmployeesToBranch(@PathVariable Long branchId,
+                                                              @RequestBody BranchServiceDto branchServiceDto) throws ZapicitoException {
+        branchService.connectAllEmployeesToBranch(branchId, branchServiceDto);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 }

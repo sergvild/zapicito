@@ -1,18 +1,16 @@
 package com.ruso.zapicito.controller;
 
 import org.springframework.boot.web.servlet.error.ErrorController;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Controller
+@RestController
 public class CustomErrorController implements ErrorController {
 
 
-    @RequestMapping("/error")
-    @ResponseBody
+    @GetMapping("/error")
     String error(HttpServletRequest request) {
         return "<h1>Error occurred</h1>";
     }

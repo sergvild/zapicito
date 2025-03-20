@@ -1,5 +1,7 @@
 server:
   port: 8080
+  servlet:
+    context-path: /api
 
 spring:
   mvc:
@@ -23,3 +25,4 @@ spring:
         show_sql: true
     defer-datasource-initialization: true
     generate-ddl: true
+    show-sql: true
