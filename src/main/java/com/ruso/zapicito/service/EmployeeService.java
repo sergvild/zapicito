@@ -1,6 +1,7 @@
 package com.ruso.zapicito.service;
 
 import com.ruso.zapicito.dto.EmployeeDto;
+import com.ruso.zapicito.dto.RoleType;
 import com.ruso.zapicito.dto.UserDto;
 import com.ruso.zapicito.entity.*;
 import com.ruso.zapicito.exception.ZapicitoException;
@@ -28,7 +29,7 @@ public class EmployeeService {
     public Employee saveOwnerEmployee(UserDto userDto) throws ZapicitoException {
         Employee employee = mapToEmployee(userDto);
         employee.setUuid(UUID.randomUUID().toString());
-        setEmployeeRole(employee, 5L);
+        setAdminRole(employee);
 
         return employeeRepository.save(employee);
     }
@@ -47,6 +48,14 @@ public class EmployeeService {
     private void setEmployeeBranches(Employee employee, Long location) throws ZapicitoException {
         Branch branch = branchService.findBranchById(location);
         employee.getBranches().add(branch);
+    }
+
+    private void setAdminRole(Employee employee) throws ZapicitoException {
+        Role role = roleRepository.findByName(RoleType.ADMIN)
+                .orElseThrow(() -> new ZapicitoException("There is no an role with that id: "
+                        + RoleType.ADMIN));
+
+        employee.setRole(role);
     }
 
     private void setEmployeeRole(Employee employee, Long roleId) throws ZapicitoException {

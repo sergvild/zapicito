@@ -1,27 +1,28 @@
 package com.ruso.zapicito.controller;
 
 import com.ruso.zapicito.dto.ApiResponse;
+import com.ruso.zapicito.dto.AppointmentDto;
 import com.ruso.zapicito.dto.CustomerDto;
 import com.ruso.zapicito.entity.Customer;
 import com.ruso.zapicito.exception.ZapicitoException;
+import com.ruso.zapicito.service.AppointmentService;
 import com.ruso.zapicito.service.CustomerService;
 import com.ruso.zapicito.util.ResponseUtil;
 import io.swagger.annotations.ApiParam;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/customers")
 public class CustomerController {
 
     private final CustomerService customerService;
-
-    public CustomerController(CustomerService customerService) {
-        this.customerService = customerService;
-    }
+    private final AppointmentService appointmentService;
 
     @PostMapping("companies/{companyId}")
     public ResponseEntity<ApiResponse<Customer>> createCustomer(@PathVariable Long companyId,
@@ -54,5 +55,11 @@ public class CustomerController {
     public ResponseEntity<ApiResponse<String>> deleteCustomer(@PathVariable @ApiParam(name = "id", value = "Customer id", example = "1") Long id){
         customerService.deleteCustomer(id);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
+    }
+
+    @GetMapping("/{id}/appointments")
+    public ResponseEntity<ApiResponse<List<AppointmentDto>>> findAppointments(@PathVariable Long id) {
+        List<AppointmentDto> appointments = appointmentService.findAppointmentsByCustomer(id);
+        return new ResponseEntity<>(ResponseUtil.success(appointments), HttpStatus.ACCEPTED);
     }
 }

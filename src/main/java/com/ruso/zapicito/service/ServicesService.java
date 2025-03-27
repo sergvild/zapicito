@@ -23,11 +23,11 @@ public class ServicesService {
     private final CategoryService categoryService;
 
     public Service createService(Service service,
-                                 List<Long> categoryIds,
+                                 Long categoryId,
                                  Long companyId) throws ZapicitoException {
 
         setServiceCompany(service, companyId);
-        setServiceCategories(service, categoryIds);
+        setServiceCategory(service, categoryId);
         return serviceRepository.save(service);
     }
 
@@ -37,7 +37,7 @@ public class ServicesService {
 
     public Service updateService(Service updatedService,
                                  Long serviceId,
-                                 List<Long> categoryIds) throws ZapicitoException {
+                                 long categoryId) throws ZapicitoException {
 
         Service savedService = serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ZapicitoException("Couldn't find service by ID=" + serviceId));
@@ -46,13 +46,13 @@ public class ServicesService {
         updatedService.setUpdatedDate(Timestamp.valueOf(LocalDateTime.now()));
         updatedService.setCompany(savedService.getCompany());
 
-        setServiceCategories(updatedService, categoryIds);
+        setServiceCategory(updatedService, categoryId);
         return serviceRepository.save(updatedService);
     }
 
-    private void setServiceCategories(Service service, List<Long> categoryIds) {
-        List<Category> categories = categoryService.findCategoriesByIds(categoryIds);
-        service.setCategories(categories);
+    private void setServiceCategory(Service service, long categoryId) throws ZapicitoException {
+        Category category = categoryService.findById(categoryId);
+        service.setCategory(category);
     }
 
     private void setServiceCompany(Service service, Long companyId) throws ZapicitoException {

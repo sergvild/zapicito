@@ -1,6 +1,5 @@
 package com.ruso.zapicito.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ruso.zapicito.entity.base.BaseEntity;
 import lombok.*;
 
@@ -25,7 +24,4 @@ public class Category extends BaseEntity {
     @Column(name = "image_url")
     private List<String> images;
 
-    @JsonIgnore
-    @ManyToMany(mappedBy = "categories")
-    private List<Service> services;
 }

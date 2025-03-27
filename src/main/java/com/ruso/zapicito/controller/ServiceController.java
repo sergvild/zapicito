@@ -28,7 +28,7 @@ public class ServiceController {
     public ResponseEntity<ApiResponse<Service>> createService(@PathVariable Long companyId,
                                                               @RequestBody ServiceDto serviceDto) throws ZapicitoException {
         Service service = servicesService.mapToService(serviceDto);
-        Service createdService = servicesService.createService(service, serviceDto.getCategories(), companyId);
+        Service createdService = servicesService.createService(service, serviceDto.getCategory(), companyId);
 
         return new ResponseEntity<>(ResponseUtil.success(createdService), HttpStatus.ACCEPTED);
     }
@@ -50,7 +50,7 @@ public class ServiceController {
                                                               @PathVariable @ApiParam(name = "id", value = "Service id", example = "1") Long id) throws ZapicitoException {
         Service updatedService = servicesService.mapToService(serviceDto);
 
-        Service service = servicesService.updateService(updatedService, id, serviceDto.getCategories());
+        Service service = servicesService.updateService(updatedService, id, serviceDto.getCategory());
         return new ResponseEntity<>(ResponseUtil.success(service), HttpStatus.ACCEPTED);
     }
 

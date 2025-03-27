@@ -1,11 +1,9 @@
 package com.ruso.zapicito.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -15,8 +13,8 @@ import java.util.List;
 public class ServiceDto {
 
     private String name;
-    private Integer price;
-    private Integer basePrice;
+    private BigDecimal price;
+    private BigDecimal basePrice;
     private String duration;
     private String durationWithoutPause;
     private String pause;
@@ -31,10 +29,10 @@ public class ServiceDto {
     private boolean isHotPrice;
     private boolean isTop;
     private boolean isAutoAllocated;
-    private Integer priceDiscount;
+    private BigDecimal priceDiscount;
     private Integer expenses;
 
-    private List<Long> categories;
+    private Long category;
     private String priceType;
     private Long taxId;
     private String color;

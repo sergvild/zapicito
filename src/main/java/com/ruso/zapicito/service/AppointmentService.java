@@ -1,20 +1,20 @@
 package com.ruso.zapicito.service;
 
-import com.ruso.zapicito.dto.BookingDto;
-import com.ruso.zapicito.dto.CustomerDto;
-import com.ruso.zapicito.dto.AppointmentDto;
-import com.ruso.zapicito.dto.ScheduleDto;
+import com.ruso.zapicito.dto.*;
 import com.ruso.zapicito.dto.response.AppointmentSlotsDto;
 import com.ruso.zapicito.entity.Appointment;
 import com.ruso.zapicito.entity.Branch;
+import com.ruso.zapicito.entity.Service;
 import com.ruso.zapicito.entity.Customer;
 import com.ruso.zapicito.exception.ZapicitoException;
 import com.ruso.zapicito.mapper.AppointmentMapper;
+import com.ruso.zapicito.mapper.CategoryMapper;
+import com.ruso.zapicito.mapper.ServiceMapper;
 import com.ruso.zapicito.repository.AppointmentRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
-@Service
+@org.springframework.stereotype.Service
 public class AppointmentService {
 
     private static final int APPOINTMENT_INTERVAL_MINUTES = 15;
@@ -34,6 +34,8 @@ public class AppointmentService {
     private final ScheduleService scheduleService;
     private final AppointmentRepository appointmentRepository;
     private final AppointmentMapper appointmentMapper;
+    private final CategoryMapper categoryMapper;
+    private final ServiceMapper serviceMapper;
 
 
     @Transactional
@@ -42,7 +44,7 @@ public class AppointmentService {
 
         Customer customer = customerService
                 .findCustomerByPhone(bookingDto.getPhone())
-                .orElseGet(()-> {
+                .orElseGet(() -> {
                     try {
                         return customerService.saveCustomer(customerDto, companyId);
                     } catch (ZapicitoException e) {
@@ -89,70 +91,157 @@ public class AppointmentService {
         return appointmentResponseDTO;
     }
 
-    public AppointmentSlotsDto findAppointmentSlots(String companyId,
-                                                    LocalDate rangeStart,
+    public AppointmentSlotsDto findAppointmentSlots(LocalDate rangeStart,
                                                     LocalDate rangeEnd,
                                                     Long serviceId,
                                                     Long branchId,
                                                     Long userId) throws ZapicitoException {
+        List<AppointmentSlotsDto.DayDto> dayDtos = new ArrayList<>();
+
+        rangeStart = (rangeStart.isBefore(LocalDate.now())) ? LocalDate.now() : rangeStart;
+
+        if (rangeEnd.isBefore(rangeStart))
+            throw new ZapicitoException("The given data was invalid. Please fix them and try again.");
 
         com.ruso.zapicito.entity.Service service = servicesService.findServiceById(serviceId);
 
         List<ScheduleDto> scheduleList = scheduleService.getSchedulesByStartAndEndDate(branchId, rangeStart, rangeEnd);
 
-        scheduleList.forEach(scheduleDto -> {
-            Map<String, List<ScheduleDto.TimeSlot>> days = scheduleDto.getDays();
-            days.forEach((day, timeSlots) -> {
-                generateSpots(day, timeSlots, 1, service.getPrice());
-            });
-        });
-
-
-        if (userId == null){
-            return null;
+        if (userId != null) {
+            scheduleList = scheduleList.stream().filter(scheduleDto -> scheduleDto.getUserId().equals(userId)).toList();
         }
 
-        //result.addAll(generateSpots((String) interval.get("start"), (String) interval.get("end"), stepMinutes, durationMinutes, date, quantity, price, currentTime));
+        List<Map<String, List<ScheduleDto.TimeSlot>>> listOfMaps = scheduleList.stream().map(ScheduleDto::getDays).toList();
+        Map<String, Set<ScheduleDto.TimeSlot>> mergedMap = listOfMaps.stream()
+                .flatMap(map -> map.entrySet().stream())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> new HashSet<>(entry.getValue()), // Use HashSet to remove duplicates
+                        (existing, newSet) -> {
+                            existing.addAll(newSet); // Merge sets
+                            return existing;
+                        }
+                ));
 
-        return null;
+        mergedMap.forEach((day, timeSlots) -> {
+            List<SpotDto> spots = new ArrayList<>(generateSpots(timeSlots, service.getPrice(), service.getDuration(), day));
+            spots.sort(Comparator.comparing(SpotDto::getStart));
+
+            AppointmentSlotsDto.DayDto appointmentDay = new AppointmentSlotsDto.DayDto();
+            appointmentDay.setDate(day);
+            appointmentDay.setSpots(spots);
+            appointmentDay.setIntervals(timeSlots);
+
+            dayDtos.add(appointmentDay);
+
+        });
+
+        AppointmentSlotsDto appointmentSlotsDto = new AppointmentSlotsDto();
+        appointmentSlotsDto.setToday(LocalDate.now().toString());
+        appointmentSlotsDto.setFormat("24h");
+        appointmentSlotsDto.setAvailabilityTimezone("America Sao_Paulo");
+        appointmentSlotsDto.setDays(dayDtos);
+
+        return appointmentSlotsDto;
     }
 
-    public List<Map<String, Object>> generateSpots(String day, List<ScheduleDto.TimeSlot> timeSlots, int quantity, Integer price){
+    public Set<SpotDto> generateSpots(Set<ScheduleDto.TimeSlot> timeSlots, BigDecimal price, Integer duration, String currentDate) {
         return
                 timeSlots.stream()
-                        .map(timeSlot -> generateSpot(timeSlot.getStart(), timeSlot.getEnd(),
-                                APPOINTMENT_INTERVAL_MINUTES, 10,
-                                quantity, price ))
-                .flatMap(Collection::stream)
-                        .toList();
+                        .map(timeSlot -> generateSpot(currentDate, timeSlot.getStart(), timeSlot.getEnd(),
+                                APPOINTMENT_INTERVAL_MINUTES, duration, price))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toSet());
     }
 
 
-    public List<Map<String, Object>> generateSpot(String startTime, String endTime,
-                                                          int stepMinutes, int durationMinutes,
-                                                          int quantity,
-                                                          int price) {
+    public List<SpotDto> generateSpot(String currentDate, String startTime, String endTime,
+                                      int stepMinutes, int durationMinutes,
+                                      BigDecimal price) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
         LocalTime start = LocalTime.parse(startTime, formatter);
         LocalTime end = LocalTime.parse(endTime, formatter);
         LocalTime now = LocalTime.now();
 
-        List<Map<String, Object>> spots = new ArrayList<>();
+        List<SpotDto> spots = new ArrayList<>();
         LocalTime current = start;
+        boolean isToday = LocalDate.now().toString().equals(currentDate);
 
         while (current.plusMinutes(durationMinutes).isBefore(end) || current.plusMinutes(durationMinutes).equals(end)) {
-            if (!current.isBefore(now) && (current.toSecondOfDay() - start.toSecondOfDay()) % (stepMinutes * 60) == 0) {
-                Map<String, Object> spot = new HashMap<>();
-                spot.put("start", current.format(formatter));
-                spot.put("end", current.plusMinutes(durationMinutes).format(formatter));
-                spot.put("quantity", quantity);
-                spot.put("prices", price);
-
+            if (!isToday || (!current.isBefore(now))) {
+                SpotDto spot = new SpotDto();
+                spot.setDate(currentDate);
+                spot.setStart(current.format(formatter));
+                spot.setEnd(current.plusMinutes(durationMinutes).format(formatter));
+                spot.setQuantity(1);
+                spot.setPrice(price);
                 spots.add(spot);
             }
             current = current.plusMinutes(stepMinutes);
         }
 
         return spots;
+    }
+
+    public List<CategoryServiceDto> getAllServicesByBranch(Long branchId) throws ZapicitoException {
+
+        return servicesService.getAllServicesByBranch(branchId).stream()
+                .collect(Collectors.groupingBy(Service::getCategory, Collectors.toList()))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    CategoryDto categoryDto = categoryMapper.toDto(entry.getKey());
+                    List<ServiceDto> serviceDtos = serviceMapper.toDtoList(entry.getValue());
+                    return new CategoryServiceDto(categoryDto, serviceDtos);
+                })
+                .sorted(Comparator.comparing(categoryServiceDto -> categoryServiceDto.getCategory().getName()))
+                .toList();
+    }
+
+    public ScheduleDatesDto getScheduleDatesByBranch(Long branchId, Long serviceId) throws ZapicitoException {
+        Service service = servicesService.findServiceById(serviceId);
+        ScheduleDatesDto scheduleDatesDto = new ScheduleDatesDto();
+
+        List<ScheduleDatesDto.DateEntry> dateEntryList = new ArrayList<>();
+        LocalDate now = LocalDate.now();
+
+        List<ScheduleDto> response = scheduleService
+                .getSchedulesByStartAndEndDate(branchId, now, now.plusDays(7));
+
+        response.stream().forEach(scheduleDto -> {
+            Optional<SpotDto> spotDtoOptional = scheduleDto.getDays().entrySet().stream()
+                    .map(entry -> {
+                        String date = entry.getKey();
+                        Set<ScheduleDto.TimeSlot> timeSlots = new HashSet<>(entry.getValue());
+
+                        return generateSpots(
+                                timeSlots,
+                                service.getPrice(),
+                                service.getDuration(),
+                                date);
+
+                    })
+                    .flatMap(Collection::stream)
+                    .findFirst();
+
+            if (spotDtoOptional.isEmpty()) {
+                return;
+            }
+
+            SpotDto spotDto = spotDtoOptional.get();
+
+            ScheduleDatesDto.DateEntry dateEntry = new ScheduleDatesDto.DateEntry();
+            dateEntry.setEmployee(scheduleDto.getUserId());
+            dateEntry.setDate(spotDto.getDate());
+            dateEntry.setPrice(spotDto.getPrice());
+            dateEntry.setTime(new ScheduleDto.TimeSlot(spotDto.getStart(), spotDto.getEnd()));
+
+            dateEntryList.add(dateEntry);
+        });
+
+        scheduleDatesDto.setDates(dateEntryList);
+
+        return scheduleDatesDto;
+
     }
 }

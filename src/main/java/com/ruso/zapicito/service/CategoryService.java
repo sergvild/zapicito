@@ -30,6 +30,11 @@ public class CategoryService {
         return categoryRepository.findAllById(categoryIds);
     }
 
+    public Category findById(Long categoryId) throws ZapicitoException {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ZapicitoException("Couldn't find category by ID="+categoryId));
+    }
+
     public Category updateCategory(Category updatedCategory, Long categoryId) throws ZapicitoException {
         categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ZapicitoException("Couldn't find category by ID="+categoryId));

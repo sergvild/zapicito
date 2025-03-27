@@ -1,11 +1,11 @@
 package com.ruso.zapicito.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ruso.zapicito.entity.base.BaseEntity;
 import lombok.*;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -20,8 +20,8 @@ public class Service extends BaseEntity {
     @Column(nullable = false)
     private String name;
     private String description;
-    private Integer price;
-    private Integer priceDiscount;
+    private BigDecimal price;
+    private BigDecimal priceDiscount;
     private boolean isHotPrice;
     private Integer duration;
     private Integer pause;
@@ -46,14 +46,9 @@ public class Service extends BaseEntity {
     @Column(name = "image")
     private List<String> images;
 
-    @JsonIgnore
-    @ManyToMany
-    @JoinTable(
-            name = "category_service",
-            joinColumns = @JoinColumn(name = "service_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    private List<Category> categories;
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     @ManyToOne
     @JoinColumn(name = "company_id", nullable = false)

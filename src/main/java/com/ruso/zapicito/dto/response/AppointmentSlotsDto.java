@@ -1,39 +1,24 @@
 package com.ruso.zapicito.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.ruso.zapicito.dto.ScheduleDto;
+import com.ruso.zapicito.dto.SpotDto;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class AppointmentSlotsDto {
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate today;
+    private String today;
     private String format;
     private String availabilityTimezone;
-    private List<Day> days;
+    private List<DayDto> days;
 
     @Data
-    private class Day {
-        @JsonFormat(pattern = "yyyy-MM-dd")
-        private LocalDate date;
-        private List<Spot> spots;
-        private List<Interval> intervals;
-
-        @Data
-        private class Spot {
-            private String start;
-            private String end;
-            private int quantity;
-            private int prices;
-        }
-
-        @Data
-        private class Interval {
-            private String start;
-            private String end;
-        }
+    public static class DayDto {
+        private String date;
+        private List<SpotDto> spots;
+        private Set<ScheduleDto.TimeSlot> intervals;
     }
 }
